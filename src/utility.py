@@ -95,8 +95,9 @@ def CSD_normalization(solid_loading,crystal_density,shape_factor,size,crude_dens
 	
 	normalization_constant=solid_loading/crystal_density/shape_factor/moment_calculation(size,crude_density_function,3)
 	density_function=list_operation(crude_density_function,'*',normalization_constant)
+	density_function2=variable("density function","$1/\mu m^4$",density_function)
 	
-	return size, density_function
+	return size, density_function2
 	
 def generate_seed_parabolic(seed_loading,crystal_density,shape_factor,mesh_size,r0,w):
 	"""
@@ -156,7 +157,11 @@ def generate_temperature_trajectory(batch_time,time_step,initial_T,end_T,order):
 		tmp1=initial_T-(initial_T-end_T)*(time[i]/batch_time)**order
 		temperature.append(tmp1)
 	
-	return time, temperature
+	time2=variable("time","min",time)
+	temperature2=variable("temperature","$^oC$",temperature)
+
+
+	return time2, temperature2
 
 def DF_to_NF(size,density_function,mesh_size):
 	"""

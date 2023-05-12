@@ -3,7 +3,7 @@ from figure import *
 from utility import *
 import numpy as np
 from scipy.integrate import quad, odeint
-import time # calculate the execution time
+import time as tm # calculate the execution time
 
 class CSD:
 	"""
@@ -48,16 +48,16 @@ class crystal:
 		B=variable("nucleation rate","$1/(\mu m^3*min)$",[])
 		tau=variable("transform time","\mu m",[])
 		C=variable("concentration","g/L",[])
-		u0s=variable("$\mu_{s,0}$","$1/\mu m^3$",self.trajectory_moment[:,0])
-		u1s=variable("$\mu_{s,1}$","$1/\mu m^2$",self.trajectory_moment[:,1])
-		u2s=variable("$\mu_{s,2}$","$1/\mu m$",self.trajectory_moment[:,2])
-		u3s=variable("$\mu_{s,3}$","-",self.trajectory_moment[:,3])
-		u4s=variable("$\mu_{s,4}$","$\mu m$",self.trajectory_moment[:,4])
-		u0n=variable("$\mu_{n,0}$","$1/\mu m^3$",self.trajectory_moment[:,5])
-		u1n=variable("$\mu_{n,1}$","$1/\mu m^2$",self.trajectory_moment[:,6])
-		u2n=variable("$\mu_{n,2}$","$1/\mu m$",self.trajectory_moment[:,7])
-		u3n=variable("$\mu_{n,3}$","-",self.trajectory_moment[:,8])
-		u4n=variable("$\mu_{n,4}$","$\mu m$",self.trajectory_moment[:,9])
+		u0s=variable("$\mu_{s,0}$","$1/\mu m^3$",[])
+		u1s=variable("$\mu_{s,1}$","$1/\mu m^2$",[])
+		u2s=variable("$\mu_{s,2}$","$1/\mu m$",[])
+		u3s=variable("$\mu_{s,3}$","-",[])
+		u4s=variable("$\mu_{s,4}$","$\mu m$",[])
+		u0n=variable("$\mu_{n,0}$","$1/\mu m^3$",[])
+		u1n=variable("$\mu_{n,1}$","$1/\mu m^2$",[])
+		u2n=variable("$\mu_{n,2}$","$1/\mu m$",[])
+		u3n=variable("$\mu_{n,3}$","-",[])
+		u4n=variable("$\mu_{n,4}$","$\mu m$",[])
 		f0=variable("PDF for size=0","$1/\mu m^4$",[])
 		
 		tmp1=[T,S,G,B,tau,C,u0s,u1s,u2s,u3s,u4s,u0n,u1n,u2n,u3n,u4n,f0]
@@ -69,7 +69,6 @@ class crystal:
 		# initialize the PDF and CSD
 		size=variable("size","$\mu m$",[])
 		density_function=variable("density function","$1/\mu m^4$",[])
-		fraction=variable("number fraction","-",[])
 		self.seed_PDF=PDF(size,density_function)
 		self.product_PDF=PDF(size,density_function)
 	
@@ -85,7 +84,7 @@ class crystal:
 		"""
 		index="none"
 		for i in range(len(self.trajectory_list)):
-			if self.trajectory_list[i].name==name:
+			if self.trajectory_list[i].trajectory.name==name:
 				index=i
 		if index=="none":
 			print("the trajectory name is wrong")
@@ -192,13 +191,13 @@ class crystal:
 		
 		"""
 		
-		start_time=time.time() # keep track of the execution time
+		start_time=tm.time() # keep track of the execution time
 		
 		# calculate the initial condition for moment equation
 		initial=[]
 		for i in range(5):
-			size=self.seed_CSD.size.value
-			density_function=self.seed_CSD.density_function.value
+			size=self.seed_PDF.size.value
+			density_function=self.seed_PDF.density_function.value
 			initial.append(moment_calculation(size,density_function,i))
 			
 		for i in range(5):
@@ -232,7 +231,7 @@ class crystal:
 		u3s=moment_trajectory[:,3]
 		u3n=moment_trajectory[:,8]
 		for i in range(len(C)):
-			T=self.trajectory_list[self.get_trajectory_index("temperature")].trajectory.value
+			T=self.trajectory_list[self.get_trajectory_index("temperature")].trajectory.value[i]
 			Csat=self.solubility(T)
 			S=(C[i]-Csat)/Csat
 			if S<0:
@@ -290,32 +289,32 @@ class crystal:
 
 
 		# print the calculation time
-		end_time=time.time()
-		program_time=round(end_time-start_time,0)
+		end_time=tm.time()
+		program_time=round(end_time-start_time,4)
 		string="execution time= "+str(program_time)+" s"
 		print(string)
 
-	def output(self):
+	def output(self,setting_dir,CSD_mesh_size):
 		"""
 		Export the simulation result (PDF, CSD and trajectory)
 		"""
 
 		# export the PDF
 		PDF_output=[self.product_PDF.size,self.product_PDF.density_function]
-		variable_output(PDF_output,"Result/PDF.csv")
+		variable_output(PDF_output,setting_dir+"Result/PDF.csv")
 
 		# export the CSD
-		mesh_size=1
+		mesh_size=CSD_mesh_size
 		size,number_fraction=DF_to_NF(self.product_PDF.size,self.product_PDF.density_function,mesh_size)
 		CSD_output=[size,number_fraction]
-		variable_output(CSD_output,"Result/CSD.csv")
+		variable_output(CSD_output,setting_dir+"Result/CSD.csv")
 
 		# export the trajectory
 		trajectory_output=[]
 		trajectory_output.append(self.trajectory_list[0].time)
 		for i in range(len(self.trajectory_list)):
 			trajectory_output.append(self.trajectory_list[i].trajectory)
-		variable_output(trajectory_output,"Result/trajectory.csv")
+		variable_output(trajectory_output,setting_dir+"Result/trajectory.csv")
 
 
 		
